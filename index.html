@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Hosted MP3 Playlist Player Test</title>
+  <style>
+    body { font-family:sans-serif; background:#111; color:#fff; text-align:center; margin:2em;}
+    .playlist { margin:1em auto; padding:1em 0; max-width:360px; }
+    .track { margin:5px 0; cursor:pointer; }
+    .track.active { background:#212; color:#6ee7b7; }
+    .controls { margin:1em;}
+  </style>
+</head>
+<body>
+  <h2>Mini Hosted MP3 Player</h2>
+  <div id="playlist" class="playlist"></div>
+  <div class="controls">
+    <button id="prev">⏮️</button>
+    <button id="playpause">▶️</button>
+    <button id="next">⏭️</button>
+    <input type="range" id="seek" min="0" max="100" value="0">
+    <span id="current">0:00</span> / <span id="duration">0:00</span>
+  </div>
+  <audio id="audio"></audio>
+  <script>
+    // List your hosted files here!
+    const tracks = [
+      { name:"Demo Song 1", url:"songs/song1.mp3" },
+      { name:"Demo Song 2", url:"songs/song2.mp3" }
+    ];
+
+    let current = 0;
+    const audio = document.getElementById('audio');
+    const playlistEl = document.getElementById('playlist');
+    const playpauseBtn = document.getElementById('playpause');
+    const seek = document.getElementById('seek');
+    const currentEl = document.getElementById('current');
+    const durationEl = document.getElementById('duration');
+
+    // Render playlist
+    function renderPlaylist() {
+      playlistEl.innerHTML = '';
+      tracks.forEach((t, i) => {
+        const div = document.createElement('div');
+        div.className = 'track' + (i === current ? ' active':'');
+        div.textContent = t.name;
+        div.onclick = () => playTrack(i);
+        playlistEl.appendChild(div);
+      });
+    }
+
+    function playTrack(idx) {
+      current = idx;
+      audio.src = tracks[current].url;
+      audio.play();
+      renderPlaylist();
+      playpauseBtn.textContent = "⏸️";
+    }
+
+    function playPause() {
+      if(audio.paused) { audio.play(); playpauseBtn.textContent = "⏸️"; }
+      else { audio.pause(); playpauseBtn.textContent = "▶️"; }
+    }
+
+    // Audio events
+    audio.addEventListener('loadedmetadata', ()=> {
+      seek.max = audio.duration||100;
+      durationEl.textContent = fmt(audio.duration);
+    });
+    audio.addEventListener('timeupdate', ()=>{
+      seek.value = audio.currentTime||0;
+      currentEl.textContent = fmt(audio.currentTime);
+    });
+    audio.addEventListener('ended', () => {
+      playNext();
+    });
+    seek.addEventListener('input', () => {
+      audio.currentTime = seek.value;
+    });
+
+    playpauseBtn.onclick = playPause;
+    document.getElementById('prev').onclick = playPrev;
+    document.getElementById('next').onclick = playNext;
+
+    function playPrev() {
+      current = (current - 1 + tracks.length) % tracks.length;
+      playTrack(current);
+    }
+    function playNext() {
+      current = (current + 1) % tracks.length;
+      playTrack(current);
+    }
+    function fmt(s) {
+      if(!s||isNaN(s)) return '0:00';
+      const m = Math.floor(s/60), sec = Math.floor(s%60).toString().padStart(2,'0');
+      return `${m}:${sec}`;
+    }
+
+    // init
+    renderPlaylist();
+    playTrack(0);
+  </script>
+  <div style="margin-top:2em;color:#6ee7b7">
+    <b>Instructions:</b> <br>
+    Upload .mp3 files to a <code>songs/</code> folder in your repo. <br>
+    Edit the <code>tracks</code> array with file names above.
+  </div>
+</body>
+</html>
